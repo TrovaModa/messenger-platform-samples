@@ -1,4 +1,4 @@
-<!-- 
+<!--
 
 Copyright 2016-present, Facebook, Inc.
 All rights reserved.
@@ -10,50 +10,63 @@ LICENSE file in the root directory of this source tree.
 <html>
   <head>
     <title>Messenger Demo</title>
+    <script   src="https://code.jquery.com/jquery-1.12.4.js"   integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU="   crossorigin="anonymous"></script>
   </head>
   <body>
     <script>
       window.fbAsyncInit = function() {
         FB.init({
-          appId: 'APP_ID',
+          appId: '1589645357949813',
           xfbml: true,
           version: 'v2.6'
-        });
+      });
+      FB.Event.subscribe("send_to_messenger", function(e) {
+      if(e.event === "clicked"){
+      $("#message")[0].click();
+      }
+      });
       };
 
       (function(d, s, id){
          var js, fjs = d.getElementsByTagName(s)[0];
          if (d.getElementById(id)) {return;}
          js = d.createElement(s); js.id = id;
-         js.src = "//connect.facebook.net/en_US/sdk.js";
+         js.src = "//connect.facebook.net/it_IT/sdk.js";
          fjs.parentNode.insertBefore(js, fjs);
-       }(document, 'script', 'facebook-jssdk'));
+      }(document, 'script', 'facebook-jssdk'));
+
     </script>
 
     <h1>Messenger Demo</h1>
 
     <div>
       <p>The "Send to Messenger" plugin will trigger an authentication callback to your webhook.</p>
-
-      <div class="fb-send-to-messenger" 
-        messenger_app_id='APP_ID'
-        page_id='PAGE_ID'
-        data-ref="PASS_THROUGH_PARAM" 
-        color="blue" 
-        size="standard">
+      <div class="fb-send-to-messenger"
+           messenger_app_id='1589645357949813'
+           page_id='260793084031549'
+           color="blue"
+           data-ref="pippo"
+           size="xlarge">
       </div>
     </div>
 
     <div>
       <p>The "Message Us" plugin takes the user directly to Messenger and into a thread with your Page.</p>
 
-      <div class="fb-messengermessageus" 
-        messenger_app_id='APP_ID'
-        page_id='PAGE_ID'
+      <div class="fb-messengermessageus"
+           messenger_app_id='1589645357949813'
+           page_id='260793084031549'
+           data-ref="pippo"
         color="blue"
-        size="standard">
+        size="xlarge">
       </div>
     </div>
+
+    <a id="message" href="https://m.me/260793084031549">
+      Message us on Facebook
+    </a>
+
+
 
   </body>
 </html>
