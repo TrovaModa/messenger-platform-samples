@@ -1,6 +1,7 @@
-logs
-*.log
-pids
+*~
+*.swp
+*.swo
 node_modules
-.npm
-*.dat
+ejs_error.js
+ejs_syntax_error.js
+jar
