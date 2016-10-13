@@ -13,16 +13,18 @@
 const
   bodyParser = require('body-parser'),
   config = require('config'),
-  crypto = require('crypto'),
+crypto = require('crypto'),
   express = require('express'),
   https = require('https'),
   request = require('request');
 
 var app = express();
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
+
+var db = null;
 
 /*
  * Be sure to setup your config values before running this code. You can
@@ -95,18 +97,36 @@ app.post('/webhook', function (req, res) {
       // Iterate over each messaging event
       pageEntry.messaging.forEach(function(messagingEvent) {
         if (messagingEvent.optin) {
-          receivedAuthentication(messagingEvent);
-        } else if (messagingEvent.message) {
-          receivedMessage(messagingEvent);
-        } else if (messagingEvent.delivery) {
-          receivedDeliveryConfirmation(messagingEvent);
-        } else if (messagingEvent.postback) {
-          receivedPostback(messagingEvent);
-        } else if (messagingEvent.read) {
-          receivedMessageRead(messagingEvent);
-        } else if (messagingEvent.account_linking) {
-          receivedAccountLink(messagingEvent);
-        } else {
+          console.log(messagingEvent);
+          getInfoUser(messagingEvent.sender,function(err,info){
+            if(err){console.log(err);return}
+            getProduct(messagingEvent.optin.ref,function(err,product){
+              if(err){console.log(err);return}
+              //sendGreetings(messagingEvent.sender.id,info,product);
+              //sendTextMessage(messagingEvent.sender.id, "Benvenuto "+info.first_name+",\n"+"Sei interessato al prodotto "+product.title);
+              console.log(product);
+              sendImageMessage(messagingEvent.sender.id,product.imageUrl,function(err){
+                if(err){console.log(err);return}
+                //sendTextMessage(messagingEvent.sender.id,"Ciao "+info.first_name+", sono la tua personal shopper di TrovaModa. Vuoi consigli sul prodotto "+product.title+"?",function(err){
+                sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono la tua personal shopper, vuoi consigli sul prodotto "+product.title.toLowerCase()+"?",function(err){
+                  if(err){console.log(err);return}
+                });
+              });
+            });
+          });
+        //receivedAuthentication(messagingEvent);
+        } // else if (messagingEvent.message) {
+        //   receivedMessage(messagingEvent);
+        // } else if (messagingEvent.delivery) {
+        //   receivedDeliveryConfirmation(messagingEvent);
+        // } else if (messagingEvent.postback) {
+        //   receivedPostback(messagingEvent);
+        // } else if (messagingEvent.read) {
+        //   receivedMessageRead(messagingEvent);
+        // } else if (messagingEvent.account_linking) {
+        //   receivedAccountLink(messagingEvent);
+        // }
+        else {
           console.log("Webhook received unknown messagingEvent: ", messagingEvent);
         }
       });
@@ -410,7 +430,7 @@ function receivedAccountLink(event) {
  * Send an image using the Send API.
  *
  */
-function sendImageMessage(recipientId) {
+function sendImageMessage(recipientId,image,cb) {
   var messageData = {
     recipient: {
       id: recipientId
@@ -419,13 +439,13 @@ function sendImageMessage(recipientId) {
       attachment: {
         type: "image",
         payload: {
-          url: SERVER_URL + "/assets/rift.png"
+          url: image,
         }
       }
     }
   };
 
-  callSendAPI(messageData);
+  callSendAPI(messageData,cb);
 }
 
 /*
@@ -520,7 +540,7 @@ function sendFileMessage(recipientId) {
  * Send a text message using the Send API.
  *
  */
-function sendTextMessage(recipientId, messageText) {
+function sendTextMessage(recipientId, messageText,cb) {
   var messageData = {
     recipient: {
       id: recipientId
@@ -531,7 +551,7 @@ function sendTextMessage(recipientId, messageText) {
     }
   };
 
-  callSendAPI(messageData);
+  callSendAPI(messageData,cb);
 }
 
 /*
@@ -574,7 +594,7 @@ function sendButtonMessage(recipientId) {
  * Send a Structured Message (Generic Message type) using the Send API.
  *
  */
-function sendGenericMessage(recipientId) {
+function sendGenericMessage(recipientId,productId) {
   var messageData = {
     recipient: {
       id: recipientId
@@ -805,7 +825,7 @@ function sendAccountLinking(recipientId) {
  * get the message id in a response
  *
  */
-function callSendAPI(messageData) {
+function callSendAPI(messageData,cb) {
   request({
     uri: 'https://graph.facebook.com/v2.6/me/messages',
     qs: { access_token: PAGE_ACCESS_TOKEN },
@@ -824,15 +844,97 @@ function callSendAPI(messageData) {
       console.log("Successfully called Send API for recipient %s",
         recipientId);
       }
+      if(cb){
+        cb(false);
+      }
     } else {
       console.error(response.error);
+      if(cb){
+        cb(response.error);
+      }
     }
   });
 }
 
+function getInfoUser(sender,cb){
+  request({
+    uri: 'https://graph.facebook.com/v2.6/'+sender.id,
+    qs: { access_token: PAGE_ACCESS_TOKEN,
+          fields : 'first_name,last_name,profile_pic,locale,timezone,gender',
+        },
+    method: 'GET'
+  }, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      try{
+        body = JSON.parse(body);
+        cb(false,body);
+      }
+      catch(e){
+        cb(new Error("Error getting user info"));
+      }
+    } else {
+      cb(new Error("Error getting user info"));
+    }
+  });
+};
+
+
+function getProduct(productId,cb){
+  request({
+    uri: "http://www.trovamoda.com/api/products/"+productId,
+    method: 'GET'
+  }, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      try{
+        body = JSON.parse(body);
+        cb(false,body);
+      }
+      catch(e){
+        cb(new Error("Error get Product info"));
+      }
+    } else {
+      cb(new Error("Error get Product info"));
+    }
+  });
+};
+
+function sendGreetings(recipientId,user,product){
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [{
+            title: "Benvenuto "+user.first_name,
+            subtitle: product.title,
+            //item_url: ,
+            image_url: product.imageUrl,
+            // buttons: [{
+            //   type: "web_url",
+            //   url: product.productUrl,
+            //   title: "Vai al negozio"
+            // }, {
+            //   type: "postback",
+            //   title: "Chiedi a noi",
+            //   payload: "Payload",
+            // }],
+          }]
+        }
+      }
+    }
+  };
+
+  callSendAPI(messageData);
+};
+
 // Start server
 // Webhooks must be available via SSL with a certificate signed by a valid
 // certificate authority.
+
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
