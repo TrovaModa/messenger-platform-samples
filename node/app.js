@@ -13,7 +13,8 @@ const
   bodyParser = require('body-parser'),
   config = require('config'),
 crypto = require('crypto'),
-  express = require('express'),
+express = require('express'),
+async = require('async'),
   https = require('https'),
   request = require('request');
 
@@ -113,19 +114,25 @@ app.post('/webhook', function (req, res) {
 });
 
 var manageEvent = function(messagingEvent){
-  getInfoUser(messagingEvent.sender,function(err,info){
-    if(err){console.log(err);return}
-    getProduct(messagingEvent.optin.ref,function(err,product){
-      if(err){console.log(err);return}
-      sendImageMessage(messagingEvent.sender.id,product.imageUrl,function(err){
-        if(err){console.log(err);return}
-        //sendTextMessage(messagingEvent.sender.id,"Ciao "+info.first_name+", sono la tua personal shopper di TrovaModa. Vuoi consigli sul prodotto "+product.title+"?",function(err){
-        sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono la tua personal shopper, vuoi consigli sul prodotto "+product.title.toLowerCase()+"?",function(err){
-          console.log("MSG",product._id,JSON.stringify(info));
-          if(err){console.log(err);return}
-        });
-      });
-    });
+  var info = null,
+  product = null;
+  async.seq(
+    function(cb) {
+      getInfoUser(messagingEvent.sender,cb);
+    },
+    function(_info,cb) {
+      info = _info;
+      getProduct(messagingEvent.optin.ref,cb);
+    },
+    function(_product,cb) {
+      product = _product;
+      sendImageMessage(messagingEvent.sender.id,product.imageUrl,cb);
+    },
+    function(cb) {
+      sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono la tua personal shopper, vuoi consigli sul prodotto "+product.title.toLowerCase()+"?",cb);
+    }
+  )(function(err){
+    console.log("MSG",product._id,JSON.stringify(info));
   });
 };
 
