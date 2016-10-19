@@ -130,6 +130,10 @@ var manageEvent = function(messagingEvent){
     },
     function(cb) {
       sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono Chiara, la tua personal shopper. Vuoi consigli su questo prodotto?",cb);
+      // sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono la tua personal shopper, vuoi consigli sul prodotto "+product.title.toLowerCase()+"?",cb);
+    },
+    function(cb) {
+      sendTextMessage(messagingEvent.sender.id,"http://www.trovamoda.com/out/"+product._id.toString(),cb);
     }
   )(function(err){
     console.log("MSG",product._id,JSON.stringify(info));
