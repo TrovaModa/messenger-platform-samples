@@ -129,7 +129,7 @@ var manageEvent = function(messagingEvent){
       sendImageMessage(messagingEvent.sender.id,product.imageUrl,cb);
     },
     function(cb) {
-      sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono la tua personal shopper, vuoi consigli sul prodotto "+product.title.toLowerCase()+"?",cb);
+      sendTextMessage(messagingEvent.sender.id,"TrovaModa ti dà il benvenuto! Sono Chiara, la tua personal shopper. Vuoi consigli su questo prodotto?",cb);
     }
   )(function(err){
     console.log("MSG",product._id,JSON.stringify(info));
